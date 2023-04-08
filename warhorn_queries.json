@@ -1,0 +1,13 @@
+{
+"event_query":"query ($slug: String!) {event(slug: $slug){id}}"
+,"event_roles":"query($slug: String!) {event(slug: $slug){id,roles{id,name}}}"
+,"gamesystems_query": "query($system: String) {gameSystems(query: $system){nodes{abbreviation,name,id}}}"
+,"gamesystems_mutation" : "mutation($name: String!) { createGameSystem(input: {name: $name}){gameSystem{id}}}"
+,"get_current_slots" : "query($slug: String!) {event(slug: $slug){slots{nodes{id,startsAt,endsAt}}}}"
+,"create_slot" : "mutation ($startsat :  ISO8601DateTime!,$endsat :  ISO8601DateTime!,$eventid : ID!,$timezone : String!) {createSlot(input: {eventId: $eventid, endsAt: $endsat, startsAt: $startsat, timezone : $timezone}){slot{id}}}"
+,"event_scenarios" : "query($slug: String!){eventScenarioOfferings(slug: $slug){nodes{scenario{name,id}}}}"
+,"create_scenario" : "mutation ($eventid : ID!,$gamesystemid : ID!,$name : String!,$blurb : String,$art : String){createEventScenario(input: {eventId: $eventid,gameSystemId: $gamesystemid,name : $name,blurb : $blurb,coverArtUrl : $art}){scenario{id}}}"
+,"session_query" : "mutation ($slotid: ID!,$scenarioid: ID!,$tablecount: Int!,$tablesize: Int!,$notes: String) {createEventSession(input: {slotId: $slotid,scenarioId: $scenarioid,tableCount: $tablecount,tableSize: $tablesize,notes: $notes}){session{id}}}"
+,"get_registration_query": "query($slug: String!, $email: String!){eventRegistration(slug: $slug, email: $email){id,roles{id,name}}}"
+,"assign_role_query": "mutation ($registraion_id: ID!, $role_id: ID!){assignRegistrationRole(input:{registrationId: $registration_id,roleId: role_id}){registration{registrant{email},roles{name}}}}"
+}
