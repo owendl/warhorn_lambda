@@ -51,14 +51,20 @@ def main(token, sheet_id, event_str):
     # Updating column names to match queries and mutations submitted
     df.rename(columns=col_rename, inplace=True)
 
-    # Dropping any rows missing required values except for art column
-    df.dropna(axis=0, subset=[x for x in col_rename.values() if x != "art"], how="any", inplace=True)
+    # Dropping extra columns from google sheet
     df.dropna(axis = 1, how ="all", inplace=True) 
-
     
     # Fixing date format
     df["date"]=df["date"].apply(fix_date)
     df["start_time"]=df["start_time"].apply(fix_start_time)
+
+    # Dropping any rows missing required values except for art column
+    clean_df = df.dropna(axis=0, subset=[x for x in col_rename.values() if x != "art"], how="any")
+    dropped_df = df[~df.index.isin(clean_df.index)]
+    
+
+    
+    
     
 
     req = Request("https://warhorn.net/graphql", method="POST")
@@ -68,10 +74,10 @@ def main(token, sheet_id, event_str):
     eventId = get_event_id(req, event_str)
     roleId = get_gm_role_id(req, event_str)
 
-    df["eventId"] = eventId
-    df["roleId"] = roleId
+    clean_df["eventId"] = eventId
+    clean_df["roleId"] = roleId
 
-    entries = df.to_dict("records")
+    entries = clean_df.to_dict("records")
 
     #######################################
     # TODO Manually removing the first entry because it is a D&D game that causes issues in testing but I can't remove it from the original sheet since I don't own it.
