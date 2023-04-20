@@ -1,5 +1,5 @@
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 from urllib.request import Request, urlopen
 # from urllib.parse
 import pandas as pd
@@ -40,7 +40,24 @@ def fix_start_time(string):
     time = datetime.strptime(string, "%I:%M:%S %p")
     return time.strftime("%H:%M:%S")
 
+def create_start_datetime(x):
 
+
+    raw_date_time = x.date + "T" + x.start_time
+
+    date_time = datetime.strptime(raw_date_time, "%Y-%m-%dT%H:%M:%S")
+
+    #manually adjusting time to 
+    date_time = date_time - timedelta(hours = 3)
+    return date_time.strftime("%Y-%m-%dT%H:%M:%S")
+
+def create_end_datetime(x):
+    
+    start_date_time =datetime.strptime(x.start_date_time, "%Y-%m-%dT%H:%M:%S")
+
+    end_date_time = start_date_time + timedelta(hours = int(x.duration))
+
+    return end_date_time.strftime("%Y-%m-%dT%H:%M:%S")
 
 
 def main(token, sheet_id, event_str):
@@ -54,13 +71,22 @@ def main(token, sheet_id, event_str):
     # Dropping extra columns from google sheet
     df.dropna(axis = 1, how ="all", inplace=True) 
     
-    # Fixing date format
-    df["date"]=df["date"].apply(fix_date)
-    df["start_time"]=df["start_time"].apply(fix_start_time)
-
     # Dropping any rows missing required values except for art column
     clean_df = df.dropna(axis=0, subset=[x for x in col_rename.values() if x != "art"], how="any")
     dropped_df = df[~df.index.isin(clean_df.index)]
+    df = clean_df
+
+    # Fixing date format
+    df["date"]=df["date"].apply(fix_date)
+    df["start_time"]=df["start_time"].apply(fix_start_time)
+    df["start_date_time"]=df.apply(create_start_datetime, axis =1)
+    df["end_date_time"]=df.apply(create_end_datetime, axis =1)
+
+    #manually adding timezone for graphql submission 
+    df["start_date_time"]=df["start_date_time"] + "-08:00"
+    df["end_date_time"]=df["end_date_time"] + "-08:00"
+
+    
     
 
     
