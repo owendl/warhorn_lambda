@@ -6,7 +6,8 @@
     ,"What is your preferred start time (Eastern Time, GMT-5) for your event? ": "start_time"
     ,"Event Duration (Hours)": "duration"
     ,"A Short Overview of Your Event (Less than 200 words please!)": "blurb"
-    ,"Maximum Number of Players":"tablesize"
+    ,"Maximum Number of Players":"tableSize"
     ,"Platform for Your Event (Zoom, Skype, Roll20, Discord, etc)": "notes"
     ,"GM's Warhorn E-mail Address":"email"
+    ,"GM Name (for event promotion)":"gm_name"
 }
