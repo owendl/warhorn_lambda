@@ -1,7 +1,5 @@
-import os
 from datetime import datetime, timedelta
 from urllib.request import Request, urlopen
-# from urllib.parse
 import pandas as pd
 import json
 
@@ -54,113 +52,113 @@ def get_gamesystem_id(req, entry, warhorn_queries):
     content, errored, message = submit_warhorn(req, step, warhorn_queries[step], vars =entry)
     if errored:
         return errored, message
+    
+    games = content["data"]["gameSystems"]["nodes"]
+    if len(games)>0:
+        entry["gameSystemId"]=games[0]["id"]
+        return False, entry
+    
+    content, errored, message = submit_warhorn(req, "gamesystems_mutation", warhorn_queries["gamesystems_mutation"], vars =entry)
+    if errored:
+        return errored, message
     else:
-        games = content["data"]["gameSystems"]["nodes"]
-        if len(games)>0:
-            entry["gameSystemId"]=games[0]["id"]
-            return False, entry
-        else:
-            content, errored, message = submit_warhorn(req, "gamesystems_mutation", warhorn_queries["gamesystems_mutation"], vars =entry)
-            if errored:
-                return errored, message
-            else:
-                entry["gameSystemId"]=content["data"]["createGameSystem"]["gameSystem"]["id"]
-                return False, entry
+        entry["gameSystemId"]=content["data"]["createGameSystem"]["gameSystem"]["id"]
+        return False, entry
 
 def create_slot_get_id(req, entry, warhorn_queries):
     step = "get_current_slots"
     content, errored, message = submit_warhorn(req, step, warhorn_queries[step], vars = entry)
     if errored:
         return errored, message
-    else:
-        current_slots = content["data"]["event"]["slots"]["nodes"]
-        for slot in current_slots:
-            if slot["startsAt"] == entry["startsAt"] and slot["endsAt"] == entry["endsAt"]:
-                entry["slotId"] = slot["id"]
-                return False, entry
-        step = "create_slot"
-        content, errored, message = submit_warhorn(req, step, warhorn_queries[step], vars = entry)
-        if errored:
-            return errored, message
-        else:
-            entry["slotId"]=content["data"]["createSlot"]["slot"]["id"]
+    
+    current_slots = content["data"]["event"]["slots"]["nodes"]
+    for slot in current_slots:
+        if slot["startsAt"] == entry["startsAt"] and slot["endsAt"] == entry["endsAt"]:
+            entry["slotId"] = slot["id"]
             return False, entry
+    step = "create_slot"
+    content, errored, message = submit_warhorn(req, step, warhorn_queries[step], vars = entry)
+    if errored:
+        return errored, message
+    else:
+        entry["slotId"]=content["data"]["createSlot"]["slot"]["id"]
+        return False, entry
 
 def create_scenario_get_id(req, entry, warhorn_queries):
     step = "event_scenarios"
     content, errored, message = submit_warhorn(req, step, warhorn_queries[step], vars = entry)
     if errored:
         return errored, message
-    else:
-        scenarios = content["data"]["eventScenarioOfferings"]["nodes"]
-        for sce in scenarios:
-            if sce["scenario"]["name"] == entry["name"]:
-                entry["scenarioId"] = sce["scenario"]["id"]
-                return False, entry
-
-        step = "create_scenario"
-        content, errored, message = submit_warhorn(req, step, warhorn_queries[step], vars = entry)
-        if errored:
-            return errored, message
-        else:
-            entry["scenarioId"] = content["data"]["createEventScenario"]["scenario"]["id"]
+    
+    scenarios = content["data"]["eventScenarioOfferings"]["nodes"]
+    for sce in scenarios:
+        if sce["scenario"]["name"] == entry["name"]:
+            entry["scenarioId"] = sce["scenario"]["id"]
             return False, entry
+
+    step = "create_scenario"
+    content, errored, message = submit_warhorn(req, step, warhorn_queries[step], vars = entry)
+    if errored:
+        return errored, message
+    else:
+        entry["scenarioId"] = content["data"]["createEventScenario"]["scenario"]["id"]
+        return False, entry
 
 def create_event_session(req, entry, warhorn_queries):
     step = "query_sessions"
     content, errored, message = submit_warhorn(req, step, warhorn_queries[step], vars = entry)
     if errored:
         return errored, message
-    else:
-        sessions = content["data"]["eventSessions"]["nodes"]
-        for s in sessions:
-            if s["name"]==entry["name"] and s["scenario"]["id"]==entry["scenarioId"] and s["slot"]["id"]==entry["slotId"]:
-                entry["sessionId"]= s["id"]
-                return False, entry
-        step = "create_session"
-        content, errored, message = submit_warhorn(req, step, warhorn_queries[step], vars = entry)
-        if errored:
-            return errored, message
-        else:
-            entry["sessionId"] = content["data"]["createEventSession"]["session"]["id"]
+    
+    sessions = content["data"]["eventSessions"]["nodes"]
+    for s in sessions:
+        if s["name"]==entry["name"] and s["scenario"]["id"]==entry["scenarioId"] and s["slot"]["id"]==entry["slotId"]:
+            entry["sessionId"]= s["id"]
             return False, entry
+    step = "create_session"
+    content, errored, message = submit_warhorn(req, step, warhorn_queries[step], vars = entry)
+    if errored:
+        return errored, message
+    else:
+        entry["sessionId"] = content["data"]["createEventSession"]["session"]["id"]
+        return False, entry
             
 def assign_gm_role(req, entry, warhorn_queries):
     step = "get_registration_query"
     content, errored, message = submit_warhorn(req, step, warhorn_queries[step], vars = entry)
     if errored:
         return errored, message
-    else:
-        if content["data"]["eventRegistration"] is None:
-            return True, "Attendee has not registered for event"
-        else:
-            entry["registrationId"] = content["data"]["eventRegistration"]["id"]
-            entry["userId"] = content["data"]["eventRegistration"]["registrant"]["id"]
-            
-            step = "check_session_gm"
-            content, errored, message = submit_warhorn(req, step, warhorn_queries[step], vars = entry)
-            if errored:
-                return errored, message
-            else:
-                sessions = content["data"]["eventSessions"]["nodes"]
-                for s in sessions:
-                    if s["id"]==entry["sessionId"]:
-                        available_gm_seats = s["availableGmSeats"]
+    
+    if content["data"]["eventRegistration"] is None:
+        return True, "Attendee has not registered for event"
+    
+    entry["registrationId"] = content["data"]["eventRegistration"]["id"]
+    entry["userId"] = content["data"]["eventRegistration"]["registrant"]["id"]
+    
+    step = "check_session_gm"
+    content, errored, message = submit_warhorn(req, step, warhorn_queries[step], vars = entry)
+    if errored:
+        return errored, message
+    
+    sessions = content["data"]["eventSessions"]["nodes"]
+    for s in sessions:
+        if s["id"]==entry["sessionId"]:
+            available_gm_seats = s["availableGmSeats"]
 
-            if available_gm_seats > 0:
-                step = "claim_gm_slot"
-                content, errored, message = submit_warhorn(req, step, warhorn_queries[step], vars = entry)
-                if errored:
-                    return errored, message
-                else:
-                    signup = content["data"]["claimGmSignup"]
-                    if "signup" in signup.keys():
-                        return False, entry
-                    else:
-                        return True, "Failed to claim GM slot"
-                    
-            else:
-                return False, entry
+    if available_gm_seats > 0:
+        step = "claim_gm_slot"
+        content, errored, message = submit_warhorn(req, step, warhorn_queries[step], vars = entry)
+        if errored:
+            return errored, message
+        
+        signup = content["data"]["claimGmSignup"]
+        if "signup" in signup.keys():
+            return False, entry
+        else:
+            return True, "Failed to claim GM slot"
+            
+    else:
+        return False, entry
 
 def publish_game(req, entry, warhorn_queries):
     step = "check_session_status"
@@ -168,25 +166,25 @@ def publish_game(req, entry, warhorn_queries):
 
     if errored:
         return errored, message
-    else:
-        sessions = content["data"]["eventSessions"]["nodes"]
-        for s in sessions:
-            if s["id"]==entry["sessionId"]:
-                status = s["status"]
+    
+    sessions = content["data"]["eventSessions"]["nodes"]
+    for s in sessions:
+        if s["id"]==entry["sessionId"]:
+            status = s["status"]
 
-        if status == "DRAFT":
-            step ="publish_game"
-            content, errored, message = submit_warhorn(req, step, warhorn_queries[step], vars = entry)
-            if errored:
-                return errored, message
-            else:
-                if content["data"]["publishEventSession"]["session"]["id"] == entry["sessionId"]:
-                    entry["completed"] = True
-                    return False, entry
-                else:
-                    return True, "Failed to publish session"
-        else:
+    if status == "DRAFT":
+        step ="publish_game"
+        content, errored, message = submit_warhorn(req, step, warhorn_queries[step], vars = entry)
+        if errored:
+            return errored, message
+        
+        if content["data"]["publishEventSession"]["session"]["id"] == entry["sessionId"]:
+            entry["completed"] = True
             return False, entry
+        else:
+            return True, "Failed to publish session"
+    else:
+        return False, entry
 
 
 
@@ -275,14 +273,17 @@ def main(token, sheet_id, event_str, warhorn_queries, col_rename):
         name = e["name"]
         gm = e["gm_name"]
         email = e["email"]
+        completed_entry = True
         while func_i < len(func_list):
             func = func_list[func_i]
             errored, e = func(req, e, warhorn_queries)
             func_i += 1
             if errored:
                 error_list.append((timestamp, name, gm, email, e))
+                completed_entry = False
                 break
-        if type(e) is dict:
+        
+        if completed_entry and e.get("completed", False):
             completed_entries.append((timestamp,name,e["start_date_time"],gm,email))
 
     return completed_entries, error_list, dropped_records

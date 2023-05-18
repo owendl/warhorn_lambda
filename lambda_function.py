@@ -16,4 +16,4 @@ with open("col_rename.json") as file:
 
 def lambda_handler(event, context):
     completed_entries, error_list, dropped_records = main(token, sheet_id, event_str, warhorn_queries, col_rename)
-    return json.dumps({"completed":len(completed_entries),"missing_data":dropped_records,"errored":error_list})
+    return json.dumps({"completed":completed_entries,"missing_data":dropped_records,"errored":error_list})
